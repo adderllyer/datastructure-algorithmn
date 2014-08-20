@@ -129,67 +129,80 @@ public class BTree {
 		}
 	}
 
-	// Split the node, node, of a B-Tree into two nodes that both contain T-1 elements and move node's median key up to the parentNode.
-	// This method will only be called if node is full; node is the i-th child of parentNode.
-	void splitChildNode(Node parentNode, int i, Node node) {                
+	/**
+	 * split the full node into two nodes that both contain T-1 elements, and move median key up to parent node
+	 * This method will only be called if node is full; node is the i-th child of parentNode.
+	 * @param parentNode  parent node
+	 * @param pIndex  pointer index in parent node which point to node which be split
+	 * @param node    node to be split
+	 */
+
+	void splitChildNode(Node parentNode, int pIndex, Node node) {                
 		Node newNode = new Node();
 		newNode.mIsLeafNode = node.mIsLeafNode;
 		newNode.mNumKeys = T - 1;
-		for (int j = 0; j < T - 1; j++) { // Copy the last T-1 elements of node into newNode.
+
+		// copy the last T-1 elements into new node
+		for (int j = 0; j < T - 1; j++) {
 			newNode.mKeys[j] = node.mKeys[j + T];
 			newNode.mObjects[j] = node.mObjects[j + T];
 		}
+
+		// if new node is not a leaf node, copy the last T Pointers of node into new node
 		if (!newNode.mIsLeafNode) {
-			for (int j = 0; j < T; j++) { // Copy the last T pointers of node into newNode.
+			for (int j = 0; j < T; j++) {
 				newNode.mChildNodes[j] = node.mChildNodes[j + T];
 			}
 			for (int j = T; j <= node.mNumKeys; j++) {                      
 				node.mChildNodes[j] = null;
 			}
 		}
+
+		// set the last T-1 keys to 0 and objects to null
 		for (int j = T; j < node.mNumKeys; j++) {
 			node.mKeys[j] = 0;
 			node.mObjects[j] = null;
 		}
+
+		// set original node key number to T-1
 		node.mNumKeys = T - 1;
 
-		// Insert a (child) pointer to node newNode into the parentNode, moving other keys and pointers as necessary.
-		for (int j = parentNode.mNumKeys; j >= i + 1; j--) {
-			parentNode.mChildNodes[j + 1] = parentNode.mChildNodes[j];
+		//move the children node pointer
+		for(int i = parentNode.mNumKeys; i > pIndex+1; i--){
+			parentNode.mChildNodes[i + 1] = parentNode.mChildNodes[i];
 		}
-		parentNode.mChildNodes[i + 1] = newNode;        
-		for (int j = parentNode.mNumKeys - 1; j >= i; j--) {
-			parentNode.mKeys[j + 1] = parentNode.mKeys[j];
-			parentNode.mObjects[j + 1] = parentNode.mObjects[j];
+		parentNode.mChildNodes[pIndex + 1] = newNode;
+
+		for (int i = parentNode.mNumKeys - 1; i >= pIndex; i--) {
+			parentNode.mKeys[i + 1] = parentNode.mKeys[i];
+			parentNode.mObjects[i + 1] = parentNode.mObjects[i];
 		}               
-		parentNode.mKeys[i] = node.mKeys[T - 1];
-		parentNode.mObjects[i] = node.mObjects[T - 1];
+		parentNode.mKeys[pIndex] = node.mKeys[T - 1];
+		parentNode.mObjects[pIndex] = node.mObjects[T - 1];
 		node.mKeys[T - 1] = 0;
 		node.mObjects[T - 1] = null;
 		parentNode.mNumKeys++;          
 	}
 
 	// Insert an element into a B-Tree. (The element will ultimately be inserted into a leaf node). 
+	/**
+	 * 
+	 */
 	void insertIntoNonFullNode(Node node, int key, Object object) {
 		int i = node.mNumKeys - 1;
 		if (node.mIsLeafNode) {
 			// Since node is not a full node insert the new element into its proper place within node.
-			while (i >= 0 && key < node.mKeys[i]) {
+			for(; i >= 0 && key < node.mKeys[i]; i--){
 				node.mKeys[i + 1] = node.mKeys[i];
 				node.mObjects[i + 1] = node.mObjects[i];
-				i--;
 			}
-			i++;
 			node.mKeys[i] = key;
 			node.mObjects[i] = object;
 			node.mNumKeys++;
 		} else {
 			// Move back from the last key of node until we find the child pointer to the node
 			// that is the root node of the subtree where the new element should be placed.
-			while (i >= 0 && key < node.mKeys[i]) {
-				i--;
-			}
-			i++;
+			for(; i >= 0 && key < node.mKeys[i]; i--);
 			if (node.mChildNodes[i].mNumKeys == (2 * T - 1)) {
 				splitChildNode(node, i, node.mChildNodes[i]);
 				if (key > node.mKeys[i]) {
