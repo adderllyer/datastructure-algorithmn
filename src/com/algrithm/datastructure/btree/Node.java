@@ -10,7 +10,7 @@ import java.util.Map.Entry;
  * @author zxie
  *
  */
-public class Node {
+public class Node<K extends Comparable<K>,V extends Object> {
 
 	/** mark if a leaf node */
 	protected boolean isLeaf;
@@ -19,19 +19,19 @@ public class Node {
 	protected boolean isRoot;
 	
 	/** parent node */
-	protected Node parent;
+	protected Node<K,V> parent;
 	
 	/** leaf node's previous node */
-	protected Node previous;
+	protected Node<K,V> previous;
 	
 	/** leaf node's next node */
-	protected Node next;	
+	protected Node<K,V> next;	
 
 	/** entry list */
-	protected List<Entry<Comparable, Object>> entries;
+	protected List<Entry<K, V>> entries;
 
 	/** children list */
-	protected List<Node> children;
+	protected List<Node<K,V>> children;
 
 	/**
 	 * Construct
@@ -39,10 +39,10 @@ public class Node {
 	 */
 	public Node(boolean isLeaf) {
 		this.isLeaf = isLeaf;
-		entries = new ArrayList<Entry<Comparable, Object>>();
+		entries = new ArrayList<Entry<K, V>>();
 
 		if (!isLeaf) {
-			children = new ArrayList<Node>();
+			children = new ArrayList<Node<K,V>>();
 		}
 	}
 
@@ -61,10 +61,10 @@ public class Node {
 	 * @param key  key for search
 	 * @return value related to key or null
 	 */
-	public Object get(Comparable key) {
+	public V get(K key) {
 
 		if(isLeaf){
-			for(Entry<Comparable, Object> entry : entries){
+			for(Entry<K, V> entry : entries){
 				if(entry.getKey().compareTo(key) == 0)
 					return entry.getValue();
 			}
@@ -96,7 +96,7 @@ public class Node {
 	 * @param obj  element's value
 	 * @param tree B+ tree
 	 */
-	public void insertOrUpdate(Comparable key, Object obj, BplusTree tree){
+	public void insertOrUpdate(K key, V obj, BplusTree<K,V> tree){
 
 		//insert into leaf node
 		if (isLeaf){
@@ -108,8 +108,8 @@ public class Node {
 					validate(parent, tree);			
 			}
 			else {// insert into a full leaf node
-				Node left = new Node(true);
-				Node right = new Node(true);                
+				Node<K,V> left = new Node<K,V>(true);
+				Node<K,V> right = new Node<K,V>(true);                
 				if (previous != null){
 					previous.setNext(left);
 					left.setPrevious(previous);
@@ -150,7 +150,7 @@ public class Node {
 				}
 				else {
 					isRoot = false;
-					Node parent = new Node(false, true);
+					Node<K,V> parent = new Node<K,V>(false, true);
 					tree.setRoot(parent);
 					left.setParent(parent);
 					right.setParent(parent);
@@ -186,27 +186,27 @@ public class Node {
 	 * Update the B+ tree after insert a entry
 	 * @param tree B+ tree
 	 */
-	protected void updateInsert(BplusTree tree){
+	protected void updateInsert(BplusTree<K,V> tree){
 
 		validate(this, tree);
 
 		//If the number of key great than the number of order, split the node into two nodes	
 		if (children.size() > tree.getOrder()) {
 
-			Node left = new Node(false);
-			Node right = new Node(false);
+			Node<K,V> left = new Node<K,V>(false);
+			Node<K,V> right = new Node<K,V>(false);
 			int leftSize = (tree.getOrder() + 1) / 2 + (tree.getOrder() + 1) % 2;
 			int rightSize = (tree.getOrder() + 1) / 2;
 
 			//copy children nodes and key to two new nodes
 			for (int i = 0; i < leftSize; i++){
 				left.getChildren().add(children.get(i));
-				left.getEntries().add(new SimpleEntry(children.get(i).getEntries().get(0).getKey(), null));
+				left.getEntries().add(new SimpleEntry<K,V>(children.get(i).getEntries().get(0).getKey(), null));
 				children.get(i).setParent(left);
 			}
 			for (int i = 0; i < rightSize; i++){
 				right.getChildren().add(children.get(leftSize + i));
-				right.getEntries().add(new SimpleEntry(children.get(leftSize + i).getEntries().get(0).getKey(), null));
+				right.getEntries().add(new SimpleEntry<K,V>(children.get(leftSize + i).getEntries().get(0).getKey(), null));
 				children.get(leftSize + i).setParent(right);
 			}
 
@@ -226,7 +226,7 @@ public class Node {
 			}
 			else {//root node
 				isRoot = false;
-				Node parent = new Node(false, true);
+				Node<K,V> parent = new Node<K,V>(false, true);
 				tree.setRoot(parent);
 				left.setParent(parent);
 				right.setParent(parent);
@@ -245,13 +245,13 @@ public class Node {
 	 * @param node  the node to be updated
 	 * @param tree  B+ tree
 	 */
-	protected static void validate(Node node, BplusTree tree) {
-		List<Node> children = node.getChildren();
-		List<Entry<Comparable,Object>> entries = node.getEntries();
+	protected void validate(Node<K,V> node, BplusTree<K,V> tree) {
+		List<Node<K,V>> children = node.getChildren();
+		List<Entry<K,V>> entries = node.getEntries();
 		entries.clear();
 		for(int i = 0; i < children.size(); i++){
-			Comparable key = children.get(i).getEntries().get(0).getKey();
-			entries.add(new SimpleEntry(key, null));
+			K key = children.get(i).getEntries().get(0).getKey();
+			entries.add(new SimpleEntry<K,V>(key, null));
 			if(!node.isRoot)
 				validate(node.getParent(), tree);
 		}
@@ -261,7 +261,7 @@ public class Node {
 	 * Update B+ tree non-leaf nodes
 	 * @param tree B+ tree
 	 */
-	protected void updateRemove(BplusTree tree) {
+	protected void updateRemove(BplusTree<K,V> tree) {
 
 		validate(this, tree);
 
@@ -270,7 +270,7 @@ public class Node {
 				if(children.size() >= 2)
 					return;
 				else{
-					Node root = children.get(0);
+					Node<K,V> root = children.get(0);
 					tree.setRoot(root);
 					root.setParent(null);
 					root.setRoot(true);
@@ -279,12 +279,12 @@ public class Node {
 				}
 			}
 			else{
-				List<Node> pChildren = this.getParent().getChildren();
+				List<Node<K,V>> pChildren = this.getParent().getChildren();
 				int currIdx = pChildren.indexOf(this);
 				int prevIdx = currIdx - 1;
 				int nextIdx = currIdx + 1;
 
-				Node previous = null, next = null;
+				Node<K,V> previous = null, next = null;
 				if(prevIdx >= 0)
 					previous = pChildren.get(prevIdx);
 				if(nextIdx < pChildren.size()-1)
@@ -292,14 +292,14 @@ public class Node {
 				if(previous != null 
 						&& previous.getChildren().size() + children.size() > tree.getOrder()
 						&& previous.getParent() == parent){//get one child from left brother
-					Node node =  previous.getChildren().get(previous.getChildren().size() - 1);
+					Node<K,V> node =  previous.getChildren().get(previous.getChildren().size() - 1);
 					children.add(0, node);
 					previous.getChildren().remove(node);
 				}
 				else if(next != null
 						&& next.getChildren().size() + children.size() > tree.getOrder()
 						&& next.getParent() == parent){ //get one child from right brother
-					Node node = next.getChildren().get(0);
+					Node<K,V> node = next.getChildren().get(0);
 					children.add(node);
 					next.getChildren().remove(node);
 				}
@@ -307,7 +307,7 @@ public class Node {
 					if(previous != null
 							&& previous.getChildren().size() + children.size() == tree.getOrder()
 							&& previous.getParent() == parent){
-						Node node = null;
+						Node<K,V> node = null;
 						for(int i = previous.getChildren().size() - 1; i >= 0; i--){
 							node = previous.getChildren().get(i);
 							node.setParent(this);
@@ -322,7 +322,7 @@ public class Node {
 					else if(next != null
 							&& next.getChildren().size() + children.size() == tree.getOrder()
 							&& next.getParent() == parent){
-						Node node = null;
+						Node<K,V> node = null;
 						for(int i = 0; i < next.getChildren().size(); i--){
 							node = next.getChildren().get(i);
 							node.setParent(this);
@@ -350,7 +350,7 @@ public class Node {
 	 * @param key  entry key
 	 * @param tree B+ tree
 	 */
-	public void remove(Comparable key, BplusTree tree){
+	public void remove(K key, BplusTree<K,V> tree){
 
 		if(isLeaf){// remove the entry from leaf node
 			if (!contains(key)){
@@ -364,14 +364,14 @@ public class Node {
 				if(previous != null 
 						&& previous.getParent() == parent 
 						&& previous.getEntries().size() + entries.size() > tree.getOrder()){
-					Entry<Comparable,Object> entry = previous.getEntries().get(previous.getEntries().size() - 1);
+					Entry<K,V> entry = previous.getEntries().get(previous.getEntries().size() - 1);
 					entries.add(0, entry);
 					previous.entries.remove(entry);
 				}
 				else if(next != null
 						&& next.getParent() == parent
 						&& next.getEntries().size() + entries.size() > tree.getOrder()){
-					Entry<Comparable, Object> entry = next.getEntries().get(0);
+					Entry<K, V> entry = next.getEntries().get(0);
 					entries.add(entry);
 					next.entries.remove(entry);
 				}
@@ -379,7 +379,7 @@ public class Node {
 				else if(previous != null
 						&& previous.getParent() == parent
 						&& previous.getEntries().size() + entries.size() == tree.getOrder()){
-					Node tmp = previous;
+					Node<K,V> tmp = previous;
 					for(int i = 0; i < previous.getEntries().size(); i++)
 						entries.add(i, previous.getEntries().get(i));
 					if(previous.previous != null){
@@ -398,7 +398,7 @@ public class Node {
 				else if(next != null
 						&& next.getParent() == parent
 						&& next.getEntries().size() + entries.size() == tree.getOrder()){
-					Node tmp = next;
+					Node<K,V> tmp = next;
 					for(int i = 0; i < next.getEntries().size(); i++)
 						entries.add(next.getEntries().get(i));
 					if(next.next != null){
@@ -439,8 +439,8 @@ public class Node {
 	 * @param key  entry key
 	 * @return true if contains, or false
 	 */
-	protected boolean contains(Comparable key) {
-		for (Entry<Comparable, Object> entry : entries) 
+	protected boolean contains(K key) {
+		for (Entry<K, V> entry : entries) 
 			if (entry.getKey().compareTo(key) == 0) 
 				return true;
 		return false;
@@ -452,8 +452,8 @@ public class Node {
 	 * @param key  element key
 	 * @param obj  element value
 	 */
-	protected void insertOrUpdate(Comparable key, Object obj){
-		Entry<Comparable, Object> entry = new SimpleEntry<Comparable, Object>(key, obj);
+	protected void insertOrUpdate(K key, V obj){
+		Entry<K, V> entry = new SimpleEntry<K, V>(key, obj);
 
 		int entrySize = entries.size();
 		if (entrySize == 0) {
@@ -481,7 +481,7 @@ public class Node {
 	 * Remove entry from a node
 	 * @param key  entry key
 	 */
-	protected void remove(Comparable key){
+	protected void remove(K key){
 		int index = -1;
 		for (int i = 0; i < entries.size(); i++) {
 			if (entries.get(i).getKey().compareTo(key) == 0) {
@@ -494,19 +494,19 @@ public class Node {
 		}
 	}
 
-	public Node getPrevious() {
+	public Node<K,V> getPrevious() {
 		return previous;
 	}
 
-	public void setPrevious(Node previous) {
+	public void setPrevious(Node<K,V> previous) {
 		this.previous = previous;
 	}
 
-	public Node getNext() {
+	public Node<K,V> getNext() {
 		return next;
 	}
 
-	public void setNext(Node next) {
+	public void setNext(Node<K,V> next) {
 		this.next = next;
 	}
 
@@ -518,27 +518,27 @@ public class Node {
 		this.isLeaf = isLeaf;
 	}
 
-	public Node getParent() {
+	public Node<K,V> getParent() {
 		return parent;
 	}
 
-	public void setParent(Node parent) {
+	public void setParent(Node<K,V> parent) {
 		this.parent = parent;
 	}
 
-	public List<Entry<Comparable, Object>> getEntries() {
+	public List<Entry<K, V>> getEntries() {
 		return entries;
 	}
 
-	public void setEntries(List<Entry<Comparable, Object>> entries) {
+	public void setEntries(List<Entry<K, V>> entries) {
 		this.entries = entries;
 	}
 
-	public List<Node> getChildren() {
+	public List<Node<K,V>> getChildren() {
 		return children;
 	}
 
-	public void setChildren(List<Node> children) {
+	public void setChildren(List<Node<K,V>> children) {
 		this.children = children;
 	}
 
@@ -559,7 +559,7 @@ public class Node {
 		sb.append(isLeaf);
 		sb.append(", ");
 		sb.append("keys: ");
-		for (Entry entry : entries){
+		for (Entry<K,V> entry : entries){
 			sb.append(entry.getKey());
 			sb.append(", ");
 		}

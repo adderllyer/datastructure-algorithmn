@@ -18,32 +18,32 @@ import java.util.Random;
  * @author zxie
  *
  */
-public class BplusTree implements Tree {
+public class BplusTree<K extends Comparable<K>, V extends Object> implements Tree<K,V> {
 	
 	/**
 	 * B+ tree root
 	 */
-	protected Node root;
+	protected Node<K, V> root;
 	
 	/** rank, max number of entries */
 	protected int order;
 	
 	/** leaf nodes list head */
-	protected Node head;
+	protected Node<K, V> head;
 	
-	public Node getHead() {
+	public Node<K,V> getHead() {
 		return head;
 	}
 
-	public void setHead(Node head) {
+	public void setHead(Node<K,V> head) {
 		this.head = head;
 	}
 
-	public Node getRoot() {
+	public Node<K,V> getRoot() {
 		return root;
 	}
 
-	public void setRoot(Node root) {
+	public void setRoot(Node<K,V> root) {
 		this.root = root;
 	}
 
@@ -56,17 +56,17 @@ public class BplusTree implements Tree {
 	}
 
 	@Override
-	public Object get(Comparable key) {
+	public V get(K key) {
 		return root.get(key);
 	}
 
 	@Override
-	public void remove(Comparable key) {
+	public void remove(K key) {
 		root.remove(key, this);
 	}
 
 	@Override
-	public void insertOrUpdate(Comparable key, Object obj) {
+	public void insertOrUpdate(K key, V obj) {
 		root.insertOrUpdate(key, obj, this);
 	}
 	
@@ -76,13 +76,13 @@ public class BplusTree implements Tree {
 			System.exit(0);
 		}
 		this.order = order;
-		root = new Node(true, true);
+		root = new Node<K,V>(true, true);
 		head = root;
 	}
 	
 	//testing
 	public static void main(String[] args) {
-		BplusTree tree = new BplusTree(6);
+		BplusTree<Integer, Integer> tree = new BplusTree<>(6);
 		Random random = new Random();
 		long current = System.currentTimeMillis();
 		for (int j = 0; j < 10000; j++) {
